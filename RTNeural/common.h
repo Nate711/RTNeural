@@ -320,6 +320,26 @@ static inline void fast_tanh(const T* in, T* out, int dim) noexcept
         out[i] = tanh_approx(in[i]);
 }
 
+template <typename T>
+static inline void swish(const T* in, T* out, int dim) noexcept
+{
+    using b_type = xsimd::simd_type<T>;
+    constexpr auto inc = (int)b_type::size;
+
+    // size for which the vectorization is possible
+    auto vec_size = dim - dim % inc;
+    for(int i = 0; i < vec_size; i += inc)
+    {
+        b_type x_vec = xsimd::load_aligned(&in[i]);
+        b_type y_vec = x_vec / (b_type((T)1) + xsimd::exp(-x_vec));
+        xsimd::store_aligned(&out[i], y_vec);
+    }
+
+    // Remaining part that cannot be vectorized
+    for(auto i = vec_size; i < dim; ++i)
+        out[i] = in[i] / (1 + std::exp(-in[i]));
+}
+
 } // namespace RTNeural
 
 #else // STL backend

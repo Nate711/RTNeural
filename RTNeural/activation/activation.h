@@ -467,6 +467,55 @@ public:
     T outs[size];
     T alpha[size];
 };
+
+/** Dynamic implementation of a Swish activation layer. */
+template <typename T>
+class SwishActivation final : public Activation<T>
+{
+public:
+    /** Constructs a Swish activation layer for a given size. */
+    explicit SwishActivation(int size)
+        : Activation<T>(
+            size, [](T x)
+            { return x / (1 + std::exp(-x)); },
+            "swish")
+    {
+    }
+
+    SwishActivation(std::initializer_list<int> sizes)
+        : SwishActivation(*sizes.begin())
+    {
+    }
+};
+
+/** Static implementation of a Swish activation layer. */
+template <typename T, int size>
+class SwishActivationT
+{
+public:
+    static constexpr auto in_size = size;
+    static constexpr auto out_size = size;
+
+    SwishActivationT() = default;
+
+    /** Returns the name of this layer. */
+    std::string getName() const noexcept { return "swish"; }
+
+    /** Returns true since this layer is an activation layer. */
+    constexpr bool isActivation() const noexcept { return true; }
+
+    void reset() { }
+
+    /** Performs forward propagation for Swish activation. */
+    inline void forward(const T (&ins)[size]) noexcept
+    {
+        for(int i = 0; i < size; ++i)
+            outs[i] = ins[i] / (1 + std::exp(-ins[i]));
+    }
+
+    T outs alignas(RTNEURAL_DEFAULT_ALIGNMENT)[size];
+};
+
 } // namespace RTNeural
 
 #endif // RTNEURAL_USE_EIGEN
